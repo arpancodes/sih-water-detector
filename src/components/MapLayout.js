@@ -1,83 +1,49 @@
 import React, { Component } from 'react'
-import { Map, TileLayer, Marker, Popup } from 'react-leaflet'
-import { waterIcon, myIcon } from '../utility/icons'
-import { waterData } from '../utility/data'
+import { Map, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
+import { myIcon } from '../utility/icons'
 
 class MapLayout extends Component {
 	constructor(props) {
 		super(props)
 		this.state = {
-			lat: 51.505,
-			lng: -0.09,
-			zoom: 1,
-			haveUserLocation: false
+			lat: this.props.lat,
+			lng: this.props.lng,
+			zoom: this.props.zoom,
+			haveUserLocation: this.props.haveUserLocation
 		}
 	}
 
-	componentDidMount() {
-		navigator.geolocation.getCurrentPosition(
-			position => {
-				this.setState(currentState => {
-					return {
-						...currentState,
-						lat: position.coords.latitude,
-						lng: position.coords.longitude,
-						zoom: 17,
-						haveUserLocation: true
-					}
-				})
-			},
-			() => {
-				fetch('https://ipapi.co/json/')
-					.then(res => res.json())
-					.then(location => {
-						this.setState(currentState => {
-							return {
-								...currentState,
-								lat: location.latitude,
-								lng: location.longitude,
-								zoom: 17,
-								haveUserLocation: true
-							}
-						})
-					})
-			}
-		)
-	}
-
 	render() {
-		const position = [this.state.lat, this.state.lng]
+		const position = [this.props.lat, this.props.lng]
 		return (
-			<Map className='map' center={position} zoom={this.state.zoom}>
+			<Map className='map' center={position} zoom={this.props.zoom}>
 				<TileLayer
 					attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
 					url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 				/>
-				{this.state.haveUserLocation ? (
-					<Marker icon={myIcon} position={position}>
-						<Popup>This is your Location </Popup>
-					</Marker>
+				{this.props.haveUserLocation ? (
+					<span>
+						<Marker icon={myIcon} position={position}>
+							<Popup>{this.props.name}</Popup>
+						</Marker>
+
+						<Circle center={position} radius={this.props.radius} color='red'>
+							{this.props.waterBound.map(place => {
+								return (
+									<Circle
+										center={place.center}
+										onClick={() => {
+											this.props.selectArea(place)
+										}}
+										radius={place.radius}
+									/>
+								)
+							})}
+						</Circle>
+					</span>
 				) : (
 					''
 				)}
-
-				{waterData.map(data => {
-					if (this.state.haveUserLocation) {
-						return (
-							<Marker
-								key={data.latitude}
-								icon={waterIcon}
-								position={[data.latitude, data.longitude]}
-							>
-								<Popup>
-									<p> Water Level : {data.popupMessage.waterlevel}</p>
-									<p> Rock Possibility : {data.popupMessage.rockPossibility}</p>
-									{/* <a href="">Read More</a> */}
-								</Popup>
-							</Marker>
-						)
-					} else return ''
-				})}
 			</Map>
 		)
 	}
